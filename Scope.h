@@ -11,8 +11,10 @@
 
 class ClientConnection;
 
-class Scope
+class Scope : public QObject
 {
+    Q_OBJECT
+
 private:
     QString name;
     ExpressionParser *parser;
@@ -28,6 +30,9 @@ public:
     void sendMsg(const QString &sender, const QString &msg);
     void addClient(ClientConnection *client);
     bool hasClient(ClientConnection *candidate) { return clients.contains(candidate); }
+
+signals:
+    void output(const QString &);
 };
 
 #endif //SCOPE_H

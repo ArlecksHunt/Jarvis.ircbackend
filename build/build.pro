@@ -6,8 +6,6 @@
 
 QT       += core network
 
-QT       -= gui
-
 debug: DESTDIR = ../debug/
 release: DESTDIR = ../release/
 
@@ -35,7 +33,8 @@ SOURCES += main.cpp \
     ParserModules.cpp \
     ParserModule.cpp \
     ../OperatorModule.cpp \
-    ../FunctionModule.cpp
+    ../FunctionModule.cpp \
+    ../IRC.cpp
 
 HEADERS += \
     JarvisService.h \
@@ -50,4 +49,6 @@ HEADERS += \
     ParserModules.h \
     ParserModule.h \
     ClientConnection.h \
-    Scope.h
+    Scope.h \
+    ../IRC.h \
+    ../InputWorker.h

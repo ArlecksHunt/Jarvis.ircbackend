@@ -36,7 +36,7 @@ void Scope::sendMsg(const QString &sender, const QString &msg)
                 scope_info.variables[ass->getFirstOp()->toString()] =  std::shared_ptr<CAS::AbstractArithmetic>(ass->getSecondOp()->copy());
                 for (const auto &client : clients)
                         client->newVariable(name, QString::fromStdString(ass->getFirstOp()->toString()), QString::fromStdString(ass->getSecondOp()->toString()));
-                qDebug() << "NewVariable(" << name << ", " << QString::fromStdString(ass->getFirstOp()->toString()) << ", " << QString::fromStdString(ass->getSecondOp()->toString()) << ")";
+                emit output("NewVariable(" + name + ", " + QString::fromStdString(ass->getFirstOp()->toString()) + ", " + QString::fromStdString(ass->getSecondOp()->toString()) + ")");
                 resultString = QString::fromStdString(ass->getSecondOp()->eval(scope_info)->toString());
             } else if (ass->getFirstOp()->getType() == CAS::AbstractArithmetic::FUNCTION) {
                 const CAS::Function *func = static_cast<const CAS::Function*>(ass->getFirstOp());
@@ -47,7 +47,7 @@ void Scope::sendMsg(const QString &sender, const QString &msg)
                 for (const auto &arg : argStrings) argQStrings.append(QString::fromStdString(arg));
                 for (const auto &client : clients)
                         client->newFunction(name, QString::fromStdString(func->getIdentifier()), argQStrings, QString::fromStdString(ass->getSecondOp()->toString()));
-                qDebug() << "NewFunction(" << name << ", " << QString::fromStdString(func->getIdentifier()) << ", " << argQStrings << ", " <<  QString::fromStdString(ass->getSecondOp()->toString()) << ")";
+                emit output("NewFunction(" + name + ", " + QString::fromStdString(func->getIdentifier()) + ", \"" + argQStrings.join(",") + "\", " +  QString::fromStdString(ass->getSecondOp()->toString()) + ")");
                 resultString = QString::fromStdString(ass->getSecondOp()->eval(scope_info)->toString());
             }
         }

@@ -6,12 +6,15 @@
 #include <QDir>
 #include "ParserModules.h"
 #include "ModulePackage.h"
+#include <QVector>
 
 /**
  * Parser with dynamic modules
  */
-class ExpressionParser
+class ExpressionParser : public QObject
 {
+    Q_OBJECT
+
 private:
     ParserModules modules; //!< Parser modules
     QList<std::shared_ptr<ModulePackage> > modulePkgs; //!< Module packages
@@ -41,6 +44,9 @@ public:
      * @return Pointer to the result tree's root
      */
     std::unique_ptr<CAS::AbstractArithmetic> parse(std::string input);
+
+signals:
+    void output(const QString &);
 };
 
 #endif //PARSER_H

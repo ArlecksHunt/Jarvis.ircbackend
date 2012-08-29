@@ -1,28 +1,26 @@
 #include "ExpressionParser.h"
 #include <string>
-#include <QDebug>
 
 ExpressionParser::ExpressionParser(const QDir &module_dir)
 {
     for (const auto &file : module_dir.entryInfoList(QStringList("*.jpkg"), QDir::Files)) {
         load(file.absoluteFilePath());
     }
-    qDebug() << "Parser initialized" << endl;
-    qDebug() << "Package Name\tModule Name\tModule Description";
-    qDebug() << "";
+    emit output("Parser initialized");
+    emit output("Package Name Module Name Module Description");
     for (const auto &modpkg : modulePkgs) {
-        qDebug() << modpkg->name();
-        qDebug() << "\tTerminals:";
+        emit output(modpkg->name());
+        emit output(" Terminals:");
         for (const auto &mod : modpkg->getModules().terminals) {
-            qDebug() << "\t\t" << mod.name() << "\t" << mod.description() << "\t";
+            emit output("  " + mod.name() + " " + mod.description());
         }
-        qDebug() << "\tOperators:";
+        emit output(" Operators:");
         for (const auto &mod : modpkg->getModules().operators) {
-            qDebug() << "\t\t" << mod.name() << "\t" << mod.description() << "\t";
+            emit output("  " + mod.name() + " " + mod.description());
         }
-        qDebug() << "\tFunctions:";
+        emit output(" Functions:");
         for (const auto &mod : modpkg->getModules().functions) {
-            qDebug() << "\t\t" << mod.name() << "\t" << mod.description() << "\t";
+            emit output("  " + mod.name() + " " + mod.description());
         }
     }
 }

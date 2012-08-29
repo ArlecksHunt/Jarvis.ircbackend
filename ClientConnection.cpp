@@ -53,7 +53,7 @@ void ClientConnection::readyRead()
         case EnterScope: {
                 quint8 requestID;
                 QString scopeName;
-                Scope scope;
+                const Scope *scope;
                 iStream >> requestID >> scopeName;
                 if (iStream.status() == QDataStream::Ok){
                     resetStreamBuf();
@@ -61,7 +61,7 @@ void ClientConnection::readyRead()
                     try {
                         scope = server->enterScope(this, scopeName);
                         oStream << static_cast<quint8>(1);
-                        scope.getInitInfo(oStream);
+                        scope->getInitInfo(oStream);
                     } catch (int) { oStream << static_cast<quint8>(0); }
                     connectionState = Loop;
                 } else {

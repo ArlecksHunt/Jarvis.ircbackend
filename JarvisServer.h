@@ -29,7 +29,7 @@ public:
      * @param pwd Password
      * @return true if login succeeded
      */
-    bool login(const QString &nick, const QString &pwd) const { qDebug() << "ClientLogin(" << nick << ", " << pwd << ")"; return true; };
+    bool login(const QString &nick, const QString &pwd) const { emit output("ClientLogin(" + nick + ", " + pwd + ")"); return true; };
     QList<QString> getScopeNames() const { return scopes.keys(); }; //!< @return List of scope names
     ExpressionParser *getParser() const { return parser.get(); } //!< @return Pointer to server wide parser
 
@@ -39,7 +39,7 @@ public:
      * @param scope Scope name
      * @return Scope object
      */
-    const Scope &enterScope(ClientConnection *client, QString scope);
+    const Scope *enterScope(ClientConnection *client, QString scope);
     /**
      * Remove client from scope
      * @param sender Pointer to ClientConnection object
@@ -75,6 +75,9 @@ public:
      */
     void load(const QString &pkgName);
 
+signals:
+    void output(const QString &) const;
+
 protected:
     /**
      * New client connected, construct ClientConnection object
@@ -88,7 +91,7 @@ private:
     QSettings settings; //!< Server settings
     std::unique_ptr<ExpressionParser> parser; //!< Server wide dynamic parser
     QList<std::shared_ptr<ClientConnection> > clients; //!< List of all clients
-    QMap<QString, Scope> scopes; //!< Maps scope object to names
+    QMap<QString, Scope*> scopes; //!< Maps scope object to names
 };
 
 #endif // JARVISSERVER_H
