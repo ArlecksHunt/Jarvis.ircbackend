@@ -12,13 +12,15 @@
 #include <QAction>
 #include <QSplitter>
 #include <queue>
-#include "JarvisServer.h"
 #include <QTextStream>
 #include <QTimer>
 #include <iostream>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QThread>
+#include <QProcess>
+#include "JarvisServer.h"
 
 class Client;
 
@@ -53,6 +55,7 @@ class Client : public QObject {
     Q_OBJECT
 public:
     JarvisServer server;
+    QThread serverthread;
     QNetworkAccessManager networkmanag;
     bool quiet{false};
 
@@ -63,6 +66,7 @@ public slots:
     void broadcast(QString msg);
     void print(QString msg) { qtout << msg << "\n"; qtout.flush(); }
     void nwreply(QNetworkReply *reply);
+
 protected:
     //void hideEvent(QHideEvent *);
 private slots:

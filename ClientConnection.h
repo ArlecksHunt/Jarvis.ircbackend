@@ -46,6 +46,7 @@ public:
      * @param socketfd Socket descriptor
      */
     ClientConnection(JarvisServer *server, int socketfd);
+    ~ClientConnection() { socket.disconnect(); }
 
     QString nick() const { return _nick; }; //!< @return Client nick
     /**

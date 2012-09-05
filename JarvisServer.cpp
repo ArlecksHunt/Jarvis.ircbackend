@@ -15,11 +15,11 @@ JarvisServer::JarvisServer() : settings("InfoAG", "Jarvis.Server")
     QObject::connect(parser.get(), SIGNAL(output(const QString &)), SIGNAL(output(const QString &)));
 }
 
-const Scope *JarvisServer::enterScope(ClientConnection *client, QString scope)
+const std::shared_ptr<Scope> &JarvisServer::enterScope(ClientConnection *client, QString scope)
 {
     if (! scopes.contains(scope)) {
-        scopes.insert(scope, new Scope(scope, parser.get()));
-        connect(scopes[scope], SIGNAL(output(const QString &)), SIGNAL(output(const QString &)));
+        scopes.insert(scope, std::make_shared<Scope>(scope, parser.get()));
+        connect(scopes[scope].get(), SIGNAL(output(const QString &)), SIGNAL(output(const QString &)));
         for (const auto &it_client: clients) {
             if (it_client.get() != client) it_client->newScope(scope);
         }

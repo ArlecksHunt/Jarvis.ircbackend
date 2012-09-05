@@ -39,7 +39,7 @@ public:
      * @param scope Scope name
      * @return Scope object
      */
-    const Scope *enterScope(ClientConnection *client, QString scope);
+    const std::shared_ptr<Scope> &enterScope(ClientConnection *client, QString scope);
     /**
      * Remove client from scope
      * @param sender Pointer to ClientConnection object
@@ -91,7 +91,7 @@ private:
     QSettings settings; //!< Server settings
     std::unique_ptr<ExpressionParser> parser; //!< Server wide dynamic parser
     QList<std::shared_ptr<ClientConnection> > clients; //!< List of all clients
-    QMap<QString, Scope*> scopes; //!< Maps scope object to names
+    QMap<QString, std::shared_ptr<Scope>> scopes; //!< Maps scope object to names
 };
 
 #endif // JARVISSERVER_H

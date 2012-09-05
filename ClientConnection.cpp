@@ -53,7 +53,7 @@ void ClientConnection::readyRead()
         case EnterScope: {
                 quint8 requestID;
                 QString scopeName;
-                const Scope *scope;
+                std::shared_ptr<Scope> scope;
                 iStream >> requestID >> scopeName;
                 if (iStream.status() == QDataStream::Ok){
                     resetStreamBuf();
