@@ -4,7 +4,7 @@
 #include <QString>
 #include <QList>
 #include <memory>
-#include "Arithmetic/EvalInfo.h"
+#include "Arithmetic/ScopeInfo.h"
 #include "ExpressionParser.h"
 #include "Arithmetic/Assignment.h"
 #include "Arithmetic/Function.h"
@@ -18,7 +18,7 @@ class Scope : public QObject
 private:
     QString name;
     ExpressionParser *parser;
-    CAS::EvalInfo scope_info;
+    CAS::ScopeInfo scope_info;
     QList<ClientConnection *> clients;
 
 public:
