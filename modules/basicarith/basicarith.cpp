@@ -5,17 +5,15 @@
 #include "Arithmetic/Multiplication.h"
 #include "Arithmetic/Division.h"
 #include "Arithmetic/NumberArith.h"
+#include "Arithmetic/Exponentiation.h"
+#include "Arithmetic/Matrix.h"
+#include "Natural.h"
+#include "ExpressionParser.h"
+#include "Arithmetic/Modulo.h"
 
 #include <string>
 #include <iostream>
 #include <QString>
-//#pragma weak operator_factory
-//extern std::map<std::string, int> operator_factory;
-/*
-std::unique_ptr<CAS::AbstractArithmetic> parse()
-{
-
-}*/
 
 extern "C" {
 
@@ -23,7 +21,7 @@ OperatorInterface BASICARITHSHARED_EXPORT Addition_jmodule()
 {
     OperatorInterface oi;
     oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
-        return std::unique_ptr<CAS::AbstractArithmetic>(new CAS::Addition(std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(first), std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(second)));
+        return make_unique<CAS::Addition>(std::move(first), std::move(second));
     };
     return oi;
 }
@@ -32,7 +30,7 @@ OperatorInterface BASICARITHSHARED_EXPORT Subtraction_jmodule()
 {
     OperatorInterface oi;
     oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
-        return std::unique_ptr<CAS::AbstractArithmetic>(new CAS::Subtraction(std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(first), std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(second)));
+        return make_unique<CAS::Subtraction>(std::move(first), std::move(second));
     };
     return oi;
 }
@@ -41,7 +39,7 @@ OperatorInterface BASICARITHSHARED_EXPORT Multiplication_jmodule()
 {
     OperatorInterface oi;
     oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
-        return std::unique_ptr<CAS::AbstractArithmetic>(new CAS::Multiplication(std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(first), std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(second)));
+        return make_unique<CAS::Multiplication>(std::move(first), std::move(second));
     };
     return oi;
 }
@@ -50,34 +48,74 @@ OperatorInterface BASICARITHSHARED_EXPORT Division_jmodule()
 {
     OperatorInterface oi;
     oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
-        return std::unique_ptr<CAS::AbstractArithmetic>(new CAS::Division(std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(first), std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(second)));
+        return make_unique<CAS::Division>(std::move(first), std::move(second));
     };
     return oi;
 }
-/*
+
+
 OperatorInterface BASICARITHSHARED_EXPORT Exponentiation_jmodule()
 {
     OperatorInterface oi;
     oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
-        return std::unique_ptr<CAS::AbstractArithmetic>(new CAS::Exponentiation(std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(first), std::forward<std::unique_ptr<CAS::AbstractArithmetic>>(second)));
+        return make_unique<CAS::Exponentiation>(std::move(first), std::move(second));
     };
     return oi;
 }
-*/
-std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Number_jmodule(const std::string &candidate)
+
+std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Number_jmodule(const std::string &candidate, std::function<std::unique_ptr<CAS::AbstractArithmetic>(std::string)>)
 {
-    bool ok;
-    int num = QString::fromStdString(candidate).toInt(&ok);
-    if (ok) return std::unique_ptr<CAS::AbstractArithmetic>(new CAS::NumberArith(num));
+    if (candidate.size() != 1 && candidate.front() == '0') return nullptr;
+    else {
+        if (candidate.find_first_not_of("0123456789") != std::string::npos) return nullptr;
+        else return make_unique<CAS::NumberArith>(CAS::Natural(candidate));
+    }
+}
+
+std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Pi_jmodule(const std::string &candidate, std::function<std::unique_ptr<CAS::AbstractArithmetic>(std::string)>)
+{
+    if (candidate == "pi") return make_unique<CAS::NumberArith>(3);
     else return nullptr;
 }
 
-std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Pi_jmodule(const std::string &candidate)
+std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Matrix_jmodule(const std::string &candidate, std::function<std::unique_ptr<CAS::AbstractArithmetic>(std::string)> parseFunc)
 {
-    if (candidate == "pi") return std::unique_ptr<CAS::NumberArith>(new CAS::NumberArith(3));
-    else return nullptr;
+    if (candidate.front() != '[' || candidate.back() != ']') return nullptr;
+
+    int level = 0;
+    for (auto it = candidate.begin() + 1; it != candidate.end() - 1; ++it) {
+        if (*it == '[') level++;
+        else if (*it == ']' && --level == -1) return nullptr;
+    }
+
+    std::vector<std::unique_ptr<CAS::AbstractArithmetic>> result;
+    if (candidate.at(1) == '[') {
+        auto lastPos = candidate.cbegin();
+        level = 0;
+        for (auto it = candidate.cbegin() + 1; it != candidate.cend() - 1; ++it) {
+            if (*it == '(' || *it == '[' || *it == '{')  level--;
+            else if (*it == ')' || *it == ']' || *it == '}') level++;
+            if (level == 0) {
+                result.emplace_back(parseFunc(std::string{lastPos + 1, it + 1}));
+                lastPos = it;
+            }
+        }
+    } else {
+        std::vector<std::string> tokens = ExpressionParser::tokenize(std::string{candidate.cbegin() + 1, candidate.cend() - 1}, ",");
+        for (const auto &token : tokens) result.emplace_back(parseFunc(token));
+    }
+    if (result.empty()) return nullptr;
+    else return make_unique<CAS::Matrix>(std::move(result));
 }
 
+OperatorInterface BASICARITHSHARED_EXPORT Modulo_jmodule()
+{
+    OperatorInterface oi;
+    oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
+        return make_unique<CAS::Modulo>(std::move(first), std::move(second));
+    };
+    return oi;
+}
 
 }
 

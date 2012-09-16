@@ -5,6 +5,7 @@ Addition : Operator
     matches: +
     priority: 1
     associativity: left
+    needsParseForMatch: false
 }
 
 Multiplication : Operator
@@ -14,6 +15,7 @@ Multiplication : Operator
     matches: *
     priority: 2
     associativity: left
+    needsParseForMatch: false
 }
 
 Division : Operator
@@ -23,6 +25,7 @@ Division : Operator
     matches: /
     priority: 2
     associativity: left
+    needsParseForMatch: false
 }
 
 Subtraction : Operator
@@ -32,6 +35,17 @@ Subtraction : Operator
     matches: -
     priority: 1
     associativity: left
+    needsParseForMatch: false
+}
+
+Exponentiation : Operator
+{
+    description: -.-
+    lib: modules/basicarith
+    matches: ^
+    priority: 3
+    associativity: right
+    needsParseForMatch: false
 }
 
 Number : Terminal
@@ -44,4 +58,20 @@ Pi : Terminal
 {
     description: circles. many of them.
     lib: modules/basicarith
+}
+
+Matrix : Terminal
+{
+    description: matrix with arbitrary dimensions
+    lib: modules/basicarith
+}
+
+Modulo : Operator
+{
+    description: modulo
+    lib: modules/basicarith
+    matches: %
+    priority: 2
+    associativity: left
+    needsParseForMatch: false
 }

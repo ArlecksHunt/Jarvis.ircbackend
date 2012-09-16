@@ -54,7 +54,7 @@ ModulePackage::ModulePackage(std::unique_ptr<QFile> file)
                             modules.functions.append(FunctionModule(head.at(0), description, this, funcInter, funcStatics));
                             break;
                         case TERMINAL:
-                            modules.terminals.append(TerminalModule(head.at(0), description, this, (std::unique_ptr<CAS::AbstractArithmetic>(*)(const std::string &))lib.resolve(head[0] + "_jmodule")));
+                            modules.terminals.append(TerminalModule(head.at(0), description, this, (std::unique_ptr<CAS::AbstractArithmetic>(*)(const std::string &, std::function<std::unique_ptr<CAS::AbstractArithmetic>(std::string)>))lib.resolve(head[0] + "_jmodule")));
                             break;
                         }
                         state = HEAD;
@@ -74,7 +74,9 @@ ModulePackage::ModulePackage(std::unique_ptr<QFile> file)
                         } else if (key == "priority") {
                             if (type == OPERATOR) opStatics.priority = value.toUInt();
                             else if (type == FUNCTION) funcStatics.priority = value.toUInt();
-                        } else if (type == OPERATOR && key == "associativity") {
+                        } else if (key == "needsParseForMatch" && type == OPERATOR)
+                            opStatics.needsParseForMatch = (value == "true") ? true : false;
+                        else if (type == OPERATOR && key == "associativity") {
                             if (value == "left") opStatics.associativity = OperatorInterface::LEFT;
                             else if (value == "right") opStatics.associativity = OperatorInterface::RIGHT;
                         } else if (key == "lib") {

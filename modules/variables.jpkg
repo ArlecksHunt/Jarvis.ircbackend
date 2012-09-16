@@ -18,4 +18,13 @@ Assignment : Operator
     priority: 0
     associativity: right
     matches: =
+    needsParseForMatch: true
+}
+
+LazyEval : Function
+{
+    description: enables definitions with lazy evaluation
+    lib: modules/variables
+    matches: lazy, 1
+    priority: 1
 }
