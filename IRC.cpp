@@ -8,6 +8,8 @@ Client::Client() {
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     connect(this,SIGNAL(itemActivated(QTreeWidgetItem*,int)),SLOT(open(QTreeWidgetItem*)));
     */QStringList args = qApp->arguments(); args.removeFirst();
+    server.moveToThread(&serverthread);
+    serverthread.start();
     connect(&server, SIGNAL(output(const QString &)), SLOT(broadcast(QString)));
     connect(&server, SIGNAL(output(const QString &)), SLOT(print(QString)));
     connect(&networkmanag, SIGNAL(finished(QNetworkReply*)), SLOT(nwreply(QNetworkReply*)));
@@ -96,9 +98,11 @@ void Channel::addMessage(QString origin,QString msg) {
         wanswer = niceName(origin);
     } else if (! client.quiet && msg == "shut up") {
         client.quiet = true;
-        send("(grml)");
+        send("(sniff)");
+        send_cmd("AWAY :I was told to shut up ;(");
         disconnect(&client.server, SIGNAL(output(const QString &)), &client, SLOT(broadcast(QString)));
     } else if (client.quiet && msg == "speak") {
+        send_cmd("AWAY");
         client.quiet = false;
         send(":-D");
         connect(&client.server, SIGNAL(output(const QString &)), &client, SLOT(broadcast(QString)));
@@ -110,6 +114,10 @@ void Channel::addMessage(QString origin,QString msg) {
         send("shut up");
         send("speak");
         send("die");
+        send("restart");
+    } else if (msg == "restart") {
+        qApp->quit();
+        QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
     }
     text.appendPlainText(niceName(origin)+": "+msg+"\n");
     if(isHidden() && !origin.isEmpty()) emit notify(channel,msg);
@@ -128,6 +136,7 @@ Network::Network(QUrl url,Client* client) : client(client) {
     user=url.userName();
     send(QString("NICK %1").arg(user));
     send(QString("USER %1 h s :%2").arg(user).arg(user));
+    send("PRIVMSG nickserv :identify keinbockdasssichdenjemandschort");
     foreach(QString name, url.path().mid(1).split(",") ) {
         send(QString("JOIN #%1").arg(name)); getChannel("#"+name);
     }
@@ -142,7 +151,6 @@ Channel* Network::getChannel(QString name) {
 }
 void Network::receive() {
     for(QByteArray msg; !(msg=readLine()).isEmpty(); ) {
-        //emit output(msg;
         if(msg.startsWith("PING")) { send("PONG"); continue; }
         msg.chop(2); msg.remove(0,1); int last=msg.indexOf(" :");
         QList<QByteArray> params = last<0 ? msg.split(' ') : msg.mid(0,last).split(' ') << msg.mid(last+2);
