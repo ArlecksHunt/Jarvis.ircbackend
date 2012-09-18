@@ -7,11 +7,13 @@
 #include "Arithmetic/NumberArith.h"
 #include "Arithmetic/Exponentiation.h"
 #include "Arithmetic/Matrix.h"
-#include "Natural.h"
+#include "Integer.h"
 #include "Arithmetic/Min.h"
 #include "Arithmetic/Max.h"
 #include "ExpressionParser.h"
 #include "Arithmetic/Modulo.h"
+#include "Arithmetic/Selection.h"
+#include "OperatorModule.cpp" //wut
 
 #include <string>
 #include <iostream>
@@ -22,6 +24,14 @@ extern "C" {
 OperatorInterface BASICARITHSHARED_EXPORT Addition_jmodule()
 {
     OperatorInterface oi;
+    oi.matches = [](const std::string &input, size_t candidatePos, const ExpressionParser &parser) {
+        if (input.at(candidatePos) == '+' && candidatePos != 0) {
+            for (const auto &opModule : parser.getParserModules().operators)
+                if (opModule.matches(input, candidatePos - 1, parser)) return false;
+            return true;
+        } else return false;
+    };
+
     oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
         return make_unique<CAS::Addition>(std::move(first), std::move(second));
     };
@@ -31,6 +41,14 @@ OperatorInterface BASICARITHSHARED_EXPORT Addition_jmodule()
 OperatorInterface BASICARITHSHARED_EXPORT Subtraction_jmodule()
 {
     OperatorInterface oi;
+    oi.matches = [](const std::string &input, size_t candidatePos, const ExpressionParser &parser) {
+        if (input.at(candidatePos) == '-' && candidatePos != 0) {
+            for (const auto &opModule : parser.getParserModules().operators)
+                if (opModule.matches(input, candidatePos - 1, parser)) return false;
+            return true;
+        } else return false;
+    };
+
     oi.parse = [](std::unique_ptr<CAS::AbstractArithmetic> first, std::unique_ptr<CAS::AbstractArithmetic> second) {
         return make_unique<CAS::Subtraction>(std::move(first), std::move(second));
     };
@@ -67,11 +85,12 @@ OperatorInterface BASICARITHSHARED_EXPORT Exponentiation_jmodule()
 
 std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Number_jmodule(const std::string &candidate, std::function<std::unique_ptr<CAS::AbstractArithmetic>(std::string)>)
 {
-    if (candidate.size() != 1 && candidate.front() == '0') return nullptr;
-    else {
-        if (candidate.find_first_not_of("0123456789") != std::string::npos) return nullptr;
-        else return make_unique<CAS::NumberArith>(CAS::Natural(candidate));
-    }
+    if (candidate.front() == '-' || candidate.front() == '+') {
+        if ((candidate.size() != 2 && candidate.at(1) == '0') || candidate.find_first_not_of("0123456789", 1) != std::string::npos) return nullptr;
+    } else if ((candidate.size() != 1 && candidate.front() == '0') || candidate.find_first_not_of("0123456789") != std::string::npos) return nullptr;
+
+    return make_unique<CAS::NumberArith>(CAS::Integer(candidate));
+
 }
 
 std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Pi_jmodule(const std::string &candidate, std::function<std::unique_ptr<CAS::AbstractArithmetic>(std::string)>)
@@ -135,6 +154,23 @@ FunctionInterface BASICARITHSHARED_EXPORT Max_jmodule()
             return make_unique<CAS::Max>(std::move(arguments.front()), std::move(arguments.at(1)));
         };
     return fi;
+}
+
+std::unique_ptr<CAS::AbstractArithmetic> BASICARITHSHARED_EXPORT Selection_jmodule(const std::string &candidate, std::function<std::unique_ptr<CAS::AbstractArithmetic>(std::string)> parseFunc)
+{
+    if (candidate.back() != '}') return nullptr;
+    int level = 0, i = candidate.size() - 2;
+    for (; i != -1; i--) {
+        if (level == 0 && candidate.at(i) == '{') break;
+        else if (candidate.at(i) == '(' || candidate.at(i) == '[' || candidate.at(i) == '{')  level--;
+        else if (candidate.at(i) == ')' || candidate.at(i) == ']' || candidate.at(i) == '}') level++;
+    }
+    if (i == -1) return nullptr;
+    CAS::AbstractArithmetic::Operands selectTokens;
+    std::unique_ptr<CAS::AbstractArithmetic> tmpToken;
+    for (const auto &token : ExpressionParser::tokenize(candidate.substr(i + 1, candidate.length() - i - 2), ","))
+        if (tmpToken = parseFunc(token)) selectTokens.emplace_back(std::move(tmpToken));
+    return make_unique<CAS::Selection>(parseFunc(candidate.substr(0, i)), std::move(selectTokens));
 }
 
 }
